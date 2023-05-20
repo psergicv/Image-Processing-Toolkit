@@ -51,7 +51,11 @@ def converted_image(filename):
         @after_this_request
         def delete_file(response):
             try:
+                # delete converted image
                 os.remove(new_image_path)
+                # delete original image
+                original_image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                os.remove(original_image_path)
             except Exception as error:
                 app.logger.error("Error removing or closing downloaded file handle", error)
             return response
