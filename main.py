@@ -24,17 +24,6 @@ def index():
 
 
 @app.route('/image_convert', methods=['GET', 'POST'])
-def image_convert_page():
-    if request.method == "POST":
-        choice = request.form['choice']
-        if choice == "JPG to PNG":
-            return redirect(url_for('jpg_to_png_converter'))
-        else:
-            return "<h1>ERROR! You did something wrong!</h1>"
-    return render_template("convert_mage_page.html")
-
-
-@app.route('/jpg_to_png_converter', methods=['GET', 'POST'])
 def jpg_to_png_converter():
     if request.method == "POST":
         if 'file' not in request.files:
