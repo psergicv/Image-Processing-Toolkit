@@ -1,7 +1,7 @@
-from flask import Flask, render_template, request, flash, redirect, url_for, send_file, send_from_directory, Response
+from flask import Flask, render_template, request, flash, redirect, url_for, send_file
 from werkzeug.utils import secure_filename
 from PIL import Image
-import logging
+from rembg import remove
 import os
 
 UPLOAD_FOLDER = "images"
@@ -47,6 +47,12 @@ def converted_image(filename):
         image = Image.open(f"{app.config['UPLOAD_FOLDER']}/{filename}")
         new_image_name = os.path.splitext(filename)[0] + "_png"
         new_image_path = f"{app.config['DOWNLOAD_FOLDER']}/{new_image_name}.png"
+
+        if filename.lower().endswith(".svg"):
+            pass
+        elif filename.lower().endswith(".avif"):
+            pass
+
         image.save(new_image_path)
 
         # send_file
@@ -77,6 +83,39 @@ def converted_image(filename):
         app.logger.error("An error occurred: ", e)
         return f"An error occurred: {e}"
 
+
+@app.route('/remove_bg', methods=['GET', 'POST'])
+def remove_image_bg():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        file = request.files['file']
+        if file.filename == '':
+            flash('No selected file')
+            return redirect(request.url)
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(upload_path)
+
+            # Check if the file is not PNG, if so convert it to PNG first
+            if not filename.lower().endswith(".png"):
+                image = Image.open(upload_path)
+                filename = os.path.splitext(filename)[0] + ".png"  # change the extension to .png
+                upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)  # update upload_path
+                image.save(upload_path, "PNG")
+
+            input_img = Image.open(upload_path)
+            output = remove(input_img)
+
+            output_path = os.path.join(app.config['DOWNLOAD_FOLDER'], os.path.splitext(filename)[0] + "_nobg.png")
+
+            output.save(output_path, "PNG")
+
+            return send_file(output_path, as_attachment=True)
+
+    return render_template('bg_remover.html')
 
 
 if __name__ == '__main__':

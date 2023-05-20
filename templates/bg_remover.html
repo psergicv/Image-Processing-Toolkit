@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block title %} JPG to PNG Convert Page {% endblock %}
+
+{% block content %}
+<h1>Upload the file to remove the Background</h1>
+    <form method="post" enctype="multipart/form-data">
+      <input type="file" name="file"><br>
+      <input type="submit" value="Upload">
+    </form>
+{% endblock %}
