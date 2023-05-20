@@ -1,11 +1,11 @@
-from flask import Flask, render_template, request, flash, redirect, url_for, send_file
+from flask import Flask, render_template, request, flash, redirect, url_for, send_file, after_this_request
 from werkzeug.utils import secure_filename
 from PIL import Image
 import os
 
 UPLOAD_FOLDER = "images"
 DOWNLOAD_FOLDER = "converted_images"
-ALLOWED_EXTENSIONS = {'jpg', 'png', 'webp', 'gif', 'jfif', 'bmp', 'svg', 'avif'}
+ALLOWED_EXTENSIONS = {'jpg', 'png', 'webp', 'jfif', 'bmp', 'svg', 'avif'}
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "secret_key_here"
@@ -41,16 +41,29 @@ def jpg_to_png_converter():
 
 
 @app.route('/converted_image/<name>')
-def converted_image(name):
-    image = Image.open(f"images/{name}")
-    new_image_name = name.split(".")[0] + "_png"
-    image.save(f"converted_images/{new_image_name}.png")
-    return send_file(
-        f'converted_images/{new_image_name}.png',
-        mimetype='image/png',
-        download_name=f'{new_image_name}.png',
-        as_attachment=True
-    )
+def converted_image(filename):
+    try:
+        image = Image.open(f"{app.config['UPLOAD_FOLDER']}/{filename}")
+        new_image_name = os.path.splitext(filename)[0] + "_png"
+        new_image_path = f"{app.config['DOWNLOAD_FOLDER']}/{new_image_name}.png"
+        image.save(new_image_path)
+
+        @after_this_request
+        def delete_file(response):
+            try:
+                os.remove(new_image_path)
+            except Exception as error:
+                app.logger.error("Error removing or closing downloaded file handle", error)
+            return response
+
+        return send_file(
+            new_image_path,
+            mimetype='image/png',
+            download_name=f'{new_image_name}.png',
+            as_attachment=True
+        )
+    except Exception as e:
+        return f"An error occurred: {e}"
 
 
 if __name__ == '__main__':
