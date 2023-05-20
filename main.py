@@ -1,6 +1,7 @@
-from flask import Flask, render_template, request, flash, redirect, url_for, send_file, after_this_request
+from flask import Flask, render_template, request, flash, redirect, url_for, send_file, send_from_directory, Response
 from werkzeug.utils import secure_filename
 from PIL import Image
+import logging
 import os
 
 UPLOAD_FOLDER = "images"
@@ -48,26 +49,34 @@ def converted_image(filename):
         new_image_path = f"{app.config['DOWNLOAD_FOLDER']}/{new_image_name}.png"
         image.save(new_image_path)
 
-        @after_this_request
-        def delete_file(response):
-            try:
-                # delete converted image
-                os.remove(new_image_path)
-                # delete original image
-                original_image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                os.remove(original_image_path)
-            except Exception as error:
-                app.logger.error("Error removing or closing downloaded file handle", error)
-            return response
+        # send_file
+        with open(new_image_path, 'rb') as bites:
+            response = send_file(
+                bites,
+                mimetype='image/png',
+                as_attachment=True,
+                download_name=f'{new_image_name}.png'
+            )
 
-        return send_file(
-            new_image_path,
-            mimetype='image/png',
-            download_name=f'{new_image_name}.png',
-            as_attachment=True
-        )
+        # delete original image
+        original_image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if os.path.exists(original_image_path):
+            os.remove(original_image_path)
+        else:
+            app.logger.error("Error: %s file not found" % original_image_path)
+
+        # delete converted image
+        if os.path.exists(new_image_path):
+            os.remove(new_image_path)
+        else:
+            app.logger.error("Error: %s file not found" % new_image_path)
+
+        return response
+
     except Exception as e:
+        app.logger.error("An error occurred: ", e)
         return f"An error occurred: {e}"
+
 
 
 if __name__ == '__main__':
