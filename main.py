@@ -5,7 +5,7 @@ import os
 
 UPLOAD_FOLDER = "images"
 DOWNLOAD_FOLDER = "converted_images"
-ALLOWED_EXTENSIONS = {'jpg', 'png', 'webp', 'gif', 'jfif'}
+ALLOWED_EXTENSIONS = {'jpg', 'png', 'webp', 'gif', 'jfif', 'bmp', 'svg', 'avif'}
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "secret_key_here"
@@ -18,15 +18,20 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
 def index():
+    return render_template('index.html')
+
+
+@app.route('/image_convert', methods=['GET', 'POST'])
+def image_convert_page():
     if request.method == "POST":
         choice = request.form['choice']
         if choice == "JPG to PNG":
             return redirect(url_for('jpg_to_png_converter'))
         else:
             return "<h1>ERROR! You did something wrong!</h1>"
-    return render_template("index.html")
+    return render_template("convert_mage_page.html")
 
 
 @app.route('/jpg_to_png_converter', methods=['GET', 'POST'])
@@ -34,11 +39,11 @@ def jpg_to_png_converter():
     if request.method == "POST":
         if 'file' not in request.files:
             flash("No file part")
-            return redirect(url_for('index'))
+            return redirect(url_for('image_convert_page'))
         file = request.files['file']
         if file.filename == "":
             flash("File not selected")
-            return redirect(url_for("index"))
+            return redirect(url_for("image_convert_page"))
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
