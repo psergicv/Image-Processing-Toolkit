@@ -36,11 +36,11 @@ def jpg_to_png_converter():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            return redirect(url_for('converted_image', name=filename))
+            return redirect(url_for('converted_image', filename=filename))
     return render_template('jpg_to_png.html')
 
 
-@app.route('/converted_image/<name>')
+@app.route('/converted_image/<filename>')
 def converted_image(filename):
     try:
         image = Image.open(f"{app.config['UPLOAD_FOLDER']}/{filename}")
